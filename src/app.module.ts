@@ -1,12 +1,11 @@
-// app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UnitsModule } from './units/units.module';
 import { MaterialsModule } from './materials/materials.module';
-import { ProjectsModule } from './projects/projects.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { CitiesModule } from './cities/cities.module';
+import { ProjectsModule } from './projects/projects.module';
 import { ProjectMaterialsModule } from './project-materials/project-materials.module';
 
 @Module({
@@ -32,10 +31,12 @@ import { ProjectMaterialsModule } from './project-materials/project-materials.mo
     }),
     UnitsModule,
     MaterialsModule,
-    ProjectsModule,
     DepartmentsModule,
     CitiesModule,
+    ProjectsModule,
     ProjectMaterialsModule,
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
