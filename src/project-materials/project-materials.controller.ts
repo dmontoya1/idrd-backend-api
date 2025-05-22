@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe, Query } from '@nestjs/common';
 import { ProjectMaterialsService } from './project-materials.service';
 import { CreateProjectMaterialDto } from './dto/create-project-material.dto';
 import { UpdateProjectMaterialDto } from './dto/update-project-material.dto';
+import { FilterProjectMaterialsDto } from './dto/filter-project-materials.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('project-materials')
@@ -20,8 +21,15 @@ export class ProjectMaterialsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todas las asignaciones de materiales a proyectos' })
-  @ApiResponse({ status: 200, description: 'Lista de asignaciones' })
+  @ApiOperation({ summary: 'Obtener asignaciones con paginación y filtros' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de asignaciones' })
+  findAllPaginated(@Query() filterDto: FilterProjectMaterialsDto) {
+    return this.projectMaterialsService.findAllPaginated(filterDto);
+  }
+
+  @Get('all')
+  @ApiOperation({ summary: 'Obtener todas las asignaciones sin paginación' })
+  @ApiResponse({ status: 200, description: 'Lista completa de asignaciones' })
   findAll() {
     return this.projectMaterialsService.findAll();
   }

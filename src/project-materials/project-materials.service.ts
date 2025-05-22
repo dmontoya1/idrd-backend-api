@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ProjectMaterial } from './entities/project-material.entity';
 import { CreateProjectMaterialDto } from './dto/create-project-material.dto';
 import { UpdateProjectMaterialDto } from './dto/update-project-material.dto';
 import { ProjectMaterialReportDto } from './dto/project-material-report.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { MaterialsService } from '../materials/materials.service';
+import { PaginatedResponseDto } from '../core/dto/paginated-response.dto';
+import { FilterProjectMaterialsDto } from './dto/filter-project-materials.dto';
 
 @Injectable()
 export class ProjectMaterialsService {
@@ -16,6 +18,63 @@ export class ProjectMaterialsService {
     private projectsService: ProjectsService,
     private materialsService: MaterialsService,
   ) {}
+
+  async findAllPaginated(filterDto: FilterProjectMaterialsDto): Promise<PaginatedResponseDto<ProjectMaterial>> {
+    const { page = 1, limit = 10, sortBy = 'id', sortOrder = 'ASC', search } = filterDto;
+
+    const queryBuilder = this.projectMaterialsRepository
+      .createQueryBuilder('projectMaterial')
+      .leftJoinAndSelect('projectMaterial.project', 'project')
+      .leftJoinAndSelect('projectMaterial.material', 'material')
+      .leftJoinAndSelect('material.unit', 'unit')
+      .leftJoinAndSelect('project.city', 'city')
+      .leftJoinAndSelect('city.department', 'department');
+
+    // Aplicar filtros
+    this.applyFilters(queryBuilder, filterDto);
+
+    // Aplicar búsqueda general
+    if (search) {
+      queryBuilder.andWhere(
+        '(project.name ILIKE :search OR material.code ILIKE :search OR material.description ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    // Aplicar ordenamiento
+    const validSortFields = ['id', 'quantity', 'createdAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'id';
+    queryBuilder.orderBy(`projectMaterial.${sortField}`, sortOrder);
+
+    // Aplicar paginación
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    // Ejecutar consulta
+    const [projectMaterials, totalItems] = await queryBuilder.getManyAndCount();
+
+    return new PaginatedResponseDto(projectMaterials, totalItems, page, limit);
+  }
+
+  private applyFilters(queryBuilder: SelectQueryBuilder<ProjectMaterial>, filterDto: FilterProjectMaterialsDto): void {
+    const { projectId, materialId, minQuantity, maxQuantity } = filterDto;
+
+    if (projectId) {
+      queryBuilder.andWhere('projectMaterial.projectId = :projectId', { projectId });
+    }
+
+    if (materialId) {
+      queryBuilder.andWhere('projectMaterial.materialId = :materialId', { materialId });
+    }
+
+    if (minQuantity !== undefined) {
+      queryBuilder.andWhere('projectMaterial.quantity >= :minQuantity', { minQuantity });
+    }
+
+    if (maxQuantity !== undefined) {
+      queryBuilder.andWhere('projectMaterial.quantity <= :maxQuantity', { maxQuantity });
+    }
+  }
 
   async create(createProjectMaterialDto: CreateProjectMaterialDto): Promise<ProjectMaterial> {
     // Buscar el proyecto y el material

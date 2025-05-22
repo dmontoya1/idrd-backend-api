@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { FilterProjectsDto } from './dto/filter-projects.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProjectMaterialsService } from '../project-materials/project-materials.service';
 
@@ -13,6 +14,20 @@ export class ProjectsController {
     private readonly projectMaterialsService: ProjectMaterialsService,
   ) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Obtener proyectos con paginación y filtros' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de proyectos' })
+  findAllPaginated(@Query() filterDto: FilterProjectsDto) {
+    return this.projectsService.findAllPaginated(filterDto);
+  }
+
+  @Get('all')
+  @ApiOperation({ summary: 'Obtener todos los proyectos sin paginación' })
+  @ApiResponse({ status: 200, description: 'Lista completa de proyectos' })
+  findAll() {
+    return this.projectsService.findAll();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo proyecto' })
   @ApiResponse({ status: 201, description: 'Proyecto creado exitosamente' })
@@ -20,13 +35,6 @@ export class ProjectsController {
   @ApiResponse({ status: 404, description: 'Ciudad no encontrada' })
   create(@Body() createProjectDto: CreateProjectDto) {
     return this.projectsService.create(createProjectDto);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Obtener todos los proyectos' })
-  @ApiResponse({ status: 200, description: 'Lista de proyectos' })
-  findAll() {
-    return this.projectsService.findAll();
   }
 
   @Get(':id')
